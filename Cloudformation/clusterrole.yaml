@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create an IAM role for an EKS cluster with cluster role permissions
+
+Resources:
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "EKSClusterRole-portfolio-dev"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      # Inline policy based on AWS documentation for cluster role permissions
+      Policies:
+        - PolicyName: EKSClusterInlinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateTags
+                Resource: "arn:aws:ec2:*:*:instance/*"
+                Condition:
+                  ForAnyValue:StringLike:
+                    aws:TagKeys: "kubernetes.io/cluster/*"
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeDhcpOptions
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeInstanceTopology
+                  - kms:DescribeKey
+                Resource: "*"
+      # Managed policies required for EKS clusters
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+
+Outputs:
+  EKSClusterRoleArn:
+    Description: ARN of the IAM role created for the EKS cluster
+    Value: !GetAtt EKSClusterRole.Arn

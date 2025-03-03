@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CloudFormation template to create an IAM role for Amazon EKS worker nodes,
+  along with a custom managed policy for IPv6 VPC CNI.
+
+Parameters:
+  IPType:
+    Type: String
+    Description: "Specify the IP family for your cluster: IPv4 or IPv6"
+    AllowedValues:
+      - IPv4
+      - IPv6
+    Default: IPv4
+
+Conditions:
+  IsIPv4: !Equals [!Ref IPType, "IPv4"]
+  IsIPv6: !Equals [!Ref IPType, "IPv6"]
+
+Resources:
+  EKSNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "AmazonEKSNodeRole-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly
+        # Attach the standard IPv4 CNI policy if using IPv4
+        - !If
+          - IsIPv4
+          - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+          - !Ref "AWS::NoValue"
+        # Attach the custom IPv6 CNI policy if using IPv6
+        - !If
+          - IsIPv6
+          - !Ref EKS_CNI_IPv6_Policy
+          - !Ref "AWS::NoValue"
+
+  EKS_CNI_IPv6_Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "AmazonEKS_CNI_IPv6_Policy-${AWS::StackName}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:AssignIpv6Addresses
+              - ec2:DescribeInstances
+              - ec2:DescribeTags
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeInstanceTypes
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ec2:CreateTags
+            Resource:
+              - "arn:aws:ec2:*:*:network-interface/*"
+
+Outputs:
+  EKSNodeRoleArn:
+    Description: "ARN of the IAM role created for EKS worker nodes"
+    Value: !GetAtt EKSNodeRole.Arn
+  EKS_CNI_IPv6_PolicyArn:
+    Description: "ARN of the custom managed policy for IPv6 VPC CNI"
+    Value: !Ref EKS_CNI_IPv6_Policy
