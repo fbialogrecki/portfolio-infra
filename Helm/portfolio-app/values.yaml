@@ -1,0 +1,20 @@
+replicaCount: 1
+
+image:
+  repository: peregrinini/portfolio-app
+  pullPolicy: IfNotPresent
+  tag: "0.0.3"
+
+containerPort: 8080
+
+service:
+  type: LoadBalancer
+  port: 80
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
