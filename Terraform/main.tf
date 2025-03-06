@@ -133,3 +133,8 @@ data "kubernetes_service" "argocd_server" {
     namespace = helm_release.argocd.namespace
   }
 }
+
+resource "kubernetes_manifest" "argocd" {
+  depends_on = [module.eks]
+  manifest   = yamldecode(file("../Kubernetes/argocd.yaml"))
+}

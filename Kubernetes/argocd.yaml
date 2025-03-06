@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: portfolio-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/fbialogrecki/portfolio-infra"
+    targetRevision: HEAD
+    path: "Helm/portfolio-app"
+    helm:
+      # Optionally specify a values file if you need to override defaults
+      # valueFiles:
+      #   - values.yaml
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
