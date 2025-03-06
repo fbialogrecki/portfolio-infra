@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: peregrinini/portfolio-app
   pullPolicy: IfNotPresent
-  tag: "0.0.3"
+  tag: "0.0.4"
 
 containerPort: 8080
 
